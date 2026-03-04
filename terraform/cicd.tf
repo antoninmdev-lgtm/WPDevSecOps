@@ -113,7 +113,7 @@ resource "aws_codepipeline" "wp_pipeline" {
 
       configuration = {
         ConnectionArn    = var.github_connection_arn
-        FullRepositoryId = "antoninmpro-wq/wordpress-devsecops"
+        FullRepositoryId = "antoninmdev-lgtm/WPDevSecOps"
         BranchName       = "main"
       }
     }
