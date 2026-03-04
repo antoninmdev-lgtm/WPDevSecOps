@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignorer les fichiers de migrations et les données de test"
+paths = [
+    '''migrations/.*\.py''',
+    '''tests/.*''',
+    '''fixtures/.*'''
+]

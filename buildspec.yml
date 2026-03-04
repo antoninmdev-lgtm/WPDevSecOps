@@ -1,0 +1,89 @@
+version: 0.2
+
+env:
+  shell: bash
+  privileged-mode: true
+  secrets-manager:
+    WPSCAN_API_TOKEN: "prod/wordpress/infra:WPSCAN_API_TOKEN"
+
+phases:
+  install:
+    commands:
+      - echo "--- INSTALLATION DES OUTILS ---"
+      # Gitleaks
+      - wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz && tar -zxvf gitleaks_8.18.2_linux_x64.tar.gz && mv gitleaks /usr/local/bin/
+      # Trivy
+      - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.48.3/trivy_0.48.3_Linux-64bit.rpm
+      # Checkov & Terraform
+      - pip3 install checkov
+      - yum install -y yum-utils && yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo && yum -y install terraform
+      - mkdir -p security-reports
+
+  pre_build:
+    commands:
+      # GitLeaks
+      - echo "--- ETAPE 1 GITLEAKS (Secrets) ---"
+      - gitleaks detect --source . -v
+
+      # Checkov
+      - echo "--- ETAPE 2 CHECOKV (Infra as Code) ---"
+      - checkov -d terraform/ --framework terraform
+
+  build:
+    commands:
+      # Build Docker
+      - echo "--- ETAPE 3 BUILD DE L'IMAGE DOCKER ---"
+      - docker build -t my-wordpress-app .
+
+      # Trivy
+      - echo "--- ETAPE 4 TRIVY (Scan Image Docker - Bloquant) ---"
+      - |
+        IMAGES="wordpress:latest mariadb:10.11 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:v0.47.0 falcosecurity/falco:latest"
+
+        for img in $IMAGES; do 
+          echo "Scanning image : $img"
+
+          REPORT_NAME=$(echo $img | tr '/:' '__')
+
+          trivy image --severity CRITICAL,HIGH \
+                --exit-code 0 \
+                --format table \
+                --output "trivy-report-${REPORT_NAME}.txt" \
+                "$img"
+          done
+
+      # Deploiement Terraform
+      - echo "--- ETAPE 5 DEPLOIEMENT TERRAFORM ---"
+      - cd terraform && terraform init && terraform apply -auto-approve
+      - export INSTANCE_URL=$(terraform output -raw website_url)
+      - cd ..
+
+      # Timer
+      - echo "--- ETAPE 6 ATTENTE DU SITE ---"
+      - |
+        timeout=300; counter=0
+        until $(curl --output /dev/null --silent --head --fail $INSTANCE_URL); do
+          if [ $counter -eq $timeout ]; then exit 1; fi
+          sleep 5 && counter=$((counter+5))
+        done
+
+      # Owasp ZAP
+      - echo "--- ETAPE 7 OWASP ZAP (Scan Dynamique) ---"
+      - |
+        docker run --rm -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
+          -t $INSTANCE_URL -r security-reports/zap_report.html || [ $? -ne 4 ]
+
+      # WPScan
+      - echo "--- ETAPE 8 WPSCAN (Scan Spécifique WordPress) ---"
+      - |
+        docker run --rm wpscanteam/wpscan \
+          --url $INSTANCE_URL --api-token $WPSCAN_API_TOKEN \
+          --enumerate p,t,u --fail-on-vulnerability --output security-reports/wpscan_report.txt
+
+  post_build:
+    commands:
+      - echo "Pipeline terminée avec succès"
+
+artifacts:
+  files:
+    - 'security-reports/*'

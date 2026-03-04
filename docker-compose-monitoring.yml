@@ -1,0 +1,48 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    user: "65534"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - /mnt/docker_data/prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    user: "472"
+    ports:
+      - "3000:3000"
+    volumes:
+      - /mnt/docker_data/grafana_data:/var/lib/grafana
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /mnt/docker_data/docker_lib:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+  falco:
+    image: falcosecurity/falco:latest
+    container_name: falco
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - /dev:/host/dev
+      - /proc:/host/proc:ro
+      - /boot:/host/boot:ro
+      - /lib/modules:/host/lib/modules:ro
+      - /usr:/host/usr:ro
+      - /mnt/docker_data/falco_data:/var/log/falco
