@@ -1,73 +1,15 @@
-resource "aws_ecr_repository" "wp_repo" {
-  name                 = "wp-app-repo"
-  image_tag_mutability = "MUTABLE"
-  force_delete         = true
+# --- 1. RÉCUPÉRATION DYNAMIQUE DE L'ID DE COMPTE ---
+data "aws_caller_identity" "current" {}
+
+# --- 2. LE BUCKET S3 ---
+resource "aws_s3_bucket" "codepipeline_bucket" {
+  bucket = "wordpress-pipeline-artifacts-${data.aws_caller_identity.current.account_id}"
 }
 
-resource "aws_s3_bucket" "pipeline_artifacts" {
-  bucket = "wp-devsecops-pipeline-artifacts-${random_id.id.hex}"
-}
-
-resource "random_id" "id" {
-  byte_length = 4
-}
-
-
-resource "aws_iam_role" "codebuild_role" {
-  name = "wp-codebuild-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = { Service = "codebuild.amazonaws.com" }
-    }]
-  })
-}
-
-
-resource "aws_iam_role_policy" "codebuild_policy" {
-  role = aws_iam_role.codebuild_role.name
-  name = "wp-codebuild-policy"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
-        Resource = ["*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["ecr:GetAuthorizationToken"]
-        Resource = ["*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["ecr:*"]
-        Resource = [aws_ecr_repository.wp_repo.arn]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject"]
-        Resource = ["${aws_s3_bucket.pipeline_artifacts.arn}/*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["secretsmanager:GetSecretValue"]
-        # On donne accès au secret créé dans sm.tf
-        Resource = [aws_secretsmanager_secret.wp_secrets.arn]
-      }
-    ]
-  })
-}
-
-
+# --- CONFIGURATION CODEBUILD ---
 resource "aws_codebuild_project" "wp_build" {
-  name          = "wp-build-project"
-  service_role  = aws_iam_role.codebuild_role.arn
+  name          = "wordpress-build"
+  service_role  = "arn:aws:iam::823717189474:role/WP-CodeBuild-Role"
 
   artifacts {
     type = "CODEPIPELINE"
@@ -75,14 +17,9 @@ resource "aws_codebuild_project" "wp_build" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/standard:7.0" 
+    image                       = "aws/codebuild/standard:5.0"
     type                        = "LINUX_CONTAINER"
-    privileged_mode             = true 
-    
-    environment_variable {
-      name  = "AWS_ACCOUNT_ID"
-      value = data.aws_caller_identity.current.account_id
-    }
+    privileged_mode             = true
   }
 
   source {
@@ -91,13 +28,13 @@ resource "aws_codebuild_project" "wp_build" {
   }
 }
 
-
+# --- CONFIGURATION CODEPIPELINE ---
 resource "aws_codepipeline" "wp_pipeline" {
-  name     = "wordpress-devsecops-pipeline"
-  role_arn = aws_iam_role.pipeline_role.arn
+  name     = "wordpress-pipeline"
+  role_arn = "arn:aws:iam::823717189474:role/WP-Pipeline-Role"
 
   artifact_store {
-    location = aws_s3_bucket.pipeline_artifacts.bucket
+    location = aws_s3_bucket.codepipeline_bucket.bucket
     type     = "S3"
   }
 
@@ -112,7 +49,7 @@ resource "aws_codepipeline" "wp_pipeline" {
       output_artifacts = ["source_output"]
 
       configuration = {
-        ConnectionArn    = var.github_connection_arn
+        ConnectionArn    = "arn:aws:codeconnections:eu-west-3:823717189474:connection/7cbdcc3d-983f-4fa2-a072-a43f6aca1523"
         FullRepositoryId = "antoninmdev-lgtm/WPDevSecOps"
         BranchName       = "main"
       }
@@ -120,7 +57,7 @@ resource "aws_codepipeline" "wp_pipeline" {
   }
 
   stage {
-    name = "Build_and_Security_Scan"
+    name = "Build"
     action {
       name             = "Build"
       category         = "Build"
@@ -136,18 +73,3 @@ resource "aws_codepipeline" "wp_pipeline" {
     }
   }
 }
-
-
-resource "aws_iam_role" "pipeline_role" {
-  name = "wp-pipeline-role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = { Service = "codepipeline.amazonaws.com" }
-    }]
-  })
-}
-
-data "aws_caller_identity" "current" {}
