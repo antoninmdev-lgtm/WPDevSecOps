@@ -49,9 +49,10 @@ resource "aws_codepipeline" "wp_pipeline" {
       output_artifacts = ["source_output"]
 
       configuration = {
-        ConnectionArn    = "arn:aws:codeconnections:eu-west-3:823717189474:connection/7cbdcc3d-983f-4fa2-a072-a43f6aca1523"
+        ConnectionArn    = "arn:aws:codeconnections:eu-west-3:823717189474:connection/5d5cec48-b8c1-4493-8c19-ea0a203dfacb"
         FullRepositoryId = "antoninmdev-lgtm/WPDevSecOps"
         BranchName       = "main"
+        DetectChanges    = "true"
       }
     }
   }
