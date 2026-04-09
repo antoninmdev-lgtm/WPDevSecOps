@@ -54,8 +54,12 @@ if [ ! -f /swapfile ]; then
 fi
 
 # --- 3. INSTALLATION DOCKER & NGINX ---
+DOMAIN1="antonin.masson.org"
+DOMAIN2="www.antonin.masson.org"
+MAIL="antoninmdev@gmail.com"
+
 apt-get update
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg nginx
+apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg nginx 
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 apt-get update
@@ -68,6 +72,7 @@ systemctl enable nginx
 usermod -aG docker ubuntu
 
 # --- 4. CONFIGURATION DU REVERSE PROXY (NGINX) ---
+MYIP="89.92.147.2/32"
 cat <<EOF > /etc/nginx/sites-available/wordpress
 server {
     listen 80;
@@ -79,13 +84,31 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        limit_req zone=mablock burst=10 nodelay;
     }
 }
 EOF
 
 ln -sf /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
+
 systemctl restart nginx
+
+read -r -d '' WHITELIST_BLOCK << EOP
+        geo \$whitelist {
+            default 0;
+            $MYIP 1;
+        }
+        map \$whitelist \$limit_ip {
+            0 \$binary_remote_addr;
+            1 "";
+        }
+        limit_req_zone \$limit_ip zone=mablock:10m rate=2r/s;
+EOP
+
+# Insertion propre après la ligne 'http {'
+sudo sed -i "/http {/a $(echo "$WHITELIST_BLOCK" | sed 's/$/\\/' | sed '$s/\\$//')" /etc/nginx/nginx.conf
+
 
 # --- 5. INSTALLATION TRIVY ---
 wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | tee /usr/share/keyrings/trivy.gpg > /dev/null
@@ -107,6 +130,8 @@ MYSQL_PASSWORD=${db_password}
 MOUNT_POINT=${mount_point}
 EOT
 
+rm -rf /home/ubuntu/wordpress/uploads.ini
+rm -rf /home/ubuntu/monitoring/prometheus.yml
 
 cat <<EOT > /home/ubuntu/wordpress/uploads.ini
 file_uploads = On
@@ -135,6 +160,36 @@ EOT
 cat <<EOT > /home/ubuntu/monitoring/docker-compose.yml
 ${monitoring_compose_content}
 EOT
+
+
+# --- 7. CONFIGURATION DU SURVEILLANCE ---
+sudo apt-get update
+sudo apt-get install -y linux-headers-$(uname -r)
+mkdir -p /home/ubuntu/falco/falco_config
+
+cat <<EOF > /home/ubuntu/falco/falco_config/falco.yaml
+json_output: true
+http_output:
+  enabled: true
+  url: "http://falcosidekick:2801/"
+EOF
+
+
+
+# WordPress (UID 33)
+chown  33:33 /home/ubuntu/wordpress/uploads.ini
+chown -R 33:33 /mnt/docker_data/wp_data
+chmod -R 775 /mnt/docker_data/wp_data
+# MariaDB (UID 999)
+chown -R 999:999 /mnt/docker_data/db_data
+# Grafana (UID 472)
+chown -R 472:472 /mnt/docker_data/grafana_data
+# Prometheus (UID 65534)
+chown -R 65534:65534 /mnt/docker_data/prometheus_data
+chown 65534:65534 /home/ubuntu/monitoring/prometheus.yml
+# Falco
+chown -R ubuntu:ubuntu /home/ubuntu/falco
+
 
 # Lancement
 chown -R ubuntu:ubuntu /home/ubuntu/wordpress

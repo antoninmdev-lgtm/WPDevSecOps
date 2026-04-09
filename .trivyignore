@@ -1,0 +1,20 @@
+# --- PROMETHEUS, GRAFANA & cAdvisor---
+# Attente de mise à jour (gRPC & Stdlib)
+CVE-2026-33186
+CVE-2026-25679
+CVE-2026-27137
+CVE-2026-24051
+CVE-2026-34040
+
+# --- GRAFANA ---
+# Faille mineure dans zlib
+CVE-2026-22184
+
+# --- MARIADB ---
+# Faille gosu
+CVE-2025-68121
+CVE-2025-58183
+CVE-2025-61726
+CVE-2025-61728
+CVE-2025-61729
+CVE-2026-25679

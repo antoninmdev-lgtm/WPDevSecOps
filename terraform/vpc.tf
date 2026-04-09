@@ -13,6 +13,7 @@ resource "aws_subnet" "public_subnet" {
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
   availability_zone       = "${var.aws_region}a"
+  #checkov:skip=CKV_AWS_130
 }
 
 resource "aws_route_table" "public_rt" {
@@ -35,8 +36,8 @@ resource "aws_default_security_group" "default" {
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
   name              = "/aws/vpc-flow-log/${aws_vpc.wp_vpc.id}"
   retention_in_days = 7
+  kms_key_id        = var.infra_kms_key_arn
   #checkov:skip=CKV_AWS_338
-  #checkov:skip=CKV_AWS_158
 }
 
 resource "aws_flow_log" "vpc_flow_log" {

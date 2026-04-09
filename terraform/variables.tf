@@ -58,13 +58,23 @@ variable "iam_role_arn" {
   type        = string
 }
 
-variable "ght_role_arn" {
-  description = "Role GitHub Actions"
+variable "iam_wp_pipeline" {
+  description = "Role AWS Pipeline"
+  type        = string
+}
+
+variable "iam_wp_codebuild" {
+  description = "Role AWS Codebuild"
   type        = string
 }
 
 variable "ebs_kms_key_arn" {
   description = "ARN de la CMK EBS"
+  type        = string
+}
+
+variable "infra_kms_key_arn" {
+  description = "ARN de la clé KMS de l'infra"
   type        = string
 }
 

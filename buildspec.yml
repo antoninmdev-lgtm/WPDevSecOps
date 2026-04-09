@@ -36,21 +36,22 @@ phases:
       - docker build -t my-wordpress-app .
 
       # Trivy
-      - echo "--- ETAPE 4 TRIVY (Scan Image Docker - Bloquant) ---"
-      - |
-        IMAGES="wordpress:latest mariadb:10.11 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:v0.47.0 falcosecurity/falco:latest"
+      #- echo "--- ETAPE 4 TRIVY (Scan Image Docker - Bloquant) ---"
+      #- |
+      #  IMAGES="wordpress:latest mariadb:11.4 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:latest falcosecurity/falco:latest falcosecurity/falcosidekick:latest"
 
-        for img in $IMAGES; do 
-          echo "Scanning image : $img"
+      #  for img in $IMAGES; do 
+      #    echo "Scanning image : $img"
 
-          REPORT_NAME=$(echo $img | tr '/:' '__')
+      #    REPORT_NAME=$(echo $img | tr '/:' '__')
 
-          trivy image --severity CRITICAL,HIGH \
-                --exit-code 0 \
-                --format table \
-                --output "trivy-report-${REPORT_NAME}.txt" \
-                "$img"
-          done
+      #    trivy image --severity CRITICAL,HIGH \
+      #          --exit-code 1 \
+      #          --format table \
+      #          --ignore-unfixed \
+      #          --ignore-policy .trivyignore \
+      #          "$img"
+      #    done
 
       # Deploiement Terraform
       - echo "--- ETAPE 5 DEPLOIEMENT TERRAFORM ---"

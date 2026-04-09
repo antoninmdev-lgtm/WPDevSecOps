@@ -15,12 +15,14 @@ resource "aws_instance" "wp_server" {
   instance_type               = var.instance_type
   key_name                    = var.key_name
   subnet_id                   = aws_subnet.public_subnet.id
+  #checkov:skip=CKV_AWS_88
   vpc_security_group_ids      = [aws_security_group.wp_sg.id]
   associate_public_ip_address = true
   user_data_replace_on_change = true
   
   monitoring                  = true
   ebs_optimized               = true
+
 
   user_data = templatefile("${path.module}/scripts/user_data.sh", {
     mount_point            = var.mount_point

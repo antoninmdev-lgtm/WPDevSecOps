@@ -22,7 +22,7 @@ services:
       - /mnt/docker_data/grafana_data:/var/lib/grafana
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     restart: unless-stopped
     privileged: true
@@ -32,17 +32,30 @@ services:
       - /sys:/sys:ro
       - /mnt/docker_data/docker_lib:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
-
+    command:
+      - '--docker_root=/var/lib/docker'   
+      
   falco:
     image: falcosecurity/falco:latest
     container_name: falco
-    restart: unless-stopped
-    privileged: true
+    privileged: true # Nécessaire pour surveiller le Kernel
     volumes:
-      - /var/run/docker.sock:/host/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
       - /dev:/host/dev
       - /proc:/host/proc:ro
       - /boot:/host/boot:ro
       - /lib/modules:/host/lib/modules:ro
       - /usr:/host/usr:ro
-      - /mnt/docker_data/falco_data:/var/log/falco
+      - /etc:/host/etc:ro
+      - ./falco_config/falco.yaml:/etc/falco/falco.yaml:ro
+    restart: always
+
+  falcosidekick:
+    image: falcosecurity/falcosidekick:latest
+    container_name: falcosidekick
+    environment:
+      - DISCORD_WEBHOOKURL=https://discord.com/api/webhooks/1488181289679978566/_pmM-dmAYvlMbK6h8rrXklS-O7PwTgWkWkBRq05vw5h8bohzsttqZlJzC9FxTyJIW5FR
+      - MIN_PRIORITY=notice 
+    ports:
+      - "2801:2801"
+    restart: always
