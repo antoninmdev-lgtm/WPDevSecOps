@@ -22,12 +22,20 @@ phases:
       - pip3 install checkov
       # Terraform
       - |
-        wget https://releases.hashicorp.com/terraform/1.14.8/terraform_1.14.8_linux_amd64.zip
-        unzip terraform_1.14.8_linux_amd64.zip
-        sudo mv terraform /usr/local/bin/
+        echo "Téléchargement Terraform..."
+        wget -q https://releases.hashicorp.com/terraform/1.14.8/terraform_1.14.8_linux_amd64.zip
+        
+        unzip -o -q terraform_1.14.8_linux_amd64.zip
+        
+        sudo mv terraform /usr/local/bin/terraform
         sudo chmod +x /usr/local/bin/terraform
+        rm terraform_1.14.8_linux_amd64.zip LICENSE.txt
+  
         terraform --version
-      - sudo apt-get update
+        which terraform
+        
+      - sudo apt-get update -qq
+      - sudo apt-get install -y -qq unzip wget jq curl awscli
 
   pre_build:
     commands:
