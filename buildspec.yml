@@ -22,8 +22,7 @@ phases:
       - pip3 install checkov
       # Terraform
       - |
-        TERRAFORM_VERSION="1.14.8"  
-        wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+        wget https://releases.hashicorp.com/terraform/1.14.8/terraform_1.14.8_linux_amd64.zip
         unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
         sudo mv terraform /usr/local/bin/
         sudo chmod +x /usr/local/bin/terraform
