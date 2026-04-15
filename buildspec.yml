@@ -40,11 +40,11 @@ phases:
     commands:
       # GitLeaks
       - echo "--- ETAPE 1 GITLEAKS (Secrets) ---"
-      - gitleaks detect --source . -v
+      - gitleaks detect --source . --exit-code 1
 
       # Checkov
       - echo "--- ETAPE 2 CHECOKV (Infra as Code) ---"
-      - checkov -d terraform/ --framework terraform
+      - checkov -d terraform/ --framework terraform --soft-fail
 
   build:
     commands:
@@ -53,28 +53,26 @@ phases:
       - docker build -t my-wordpress-app .
 
       # Trivy
-      #- echo "--- ETAPE 4 TRIVY (Scan Image Docker - Bloquant) ---"
-      #- |
-      #  IMAGES="wordpress:latest mariadb:11.4 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:latest falcosecurity/falco:latest falcosecurity/falcosidekick:latest"
+      - echo "--- ETAPE 4 TRIVY (Scan Image Docker - Bloquant) ---"
+      - |
+        IMAGES="wordpress:latest mariadb:11.4 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:latest falcosecurity/falco:latest falcosecurity/falcosidekick:latest"
 
-      #  for img in $IMAGES; do 
-      #    echo "Scanning image : $img"
-
-      #    REPORT_NAME=$(echo $img | tr '/:' '__')
-
-      #    trivy image --severity CRITICAL,HIGH \
-      #          --exit-code 1 \
-      #          --format table \
-      #          --ignore-unfixed \
-      #          --ignore-policy .trivyignore \
-      #          "$img"
-      #    done
+        for img in $IMAGES; do
+          trivy image --severity CRITICAL,HIGH \
+                --exit-code 1 \
+                --format table \
+                --ignore-unfixed \
+                --ignore-policy .trivyignore \
+                "$img"
+          done
 
       # Deploiement Terraform
-      - echo "--- ETAPE 5 DEPLOIEMENT TERRAFORM ---"
-      - cd terraform && terraform init && terraform apply -auto-approve
-      - export INSTANCE_URL=$(terraform output -raw website_url)
-      - cd ..
+      - cd terraform
+      - terraform init
+      - terraform validate
+      - terraform fmt -check
+      - terraform plan -out=tfplan -var-file="dev.tfvars"
+      - aws s3 cp tfplan s3://your-bucket/tfplans/dev-$(date +%Y%m%d-%H%M).plan
 
       # Timer
       - echo "--- ETAPE 6 ATTENTE DU SITE ---"

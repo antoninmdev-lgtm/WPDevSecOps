@@ -110,12 +110,6 @@ EOP
 sudo sed -i "/http {/a $(echo "$WHITELIST_BLOCK" | sed 's/$/\\/' | sed '$s/\\$//')" /etc/nginx/nginx.conf
 
 
-# --- 5. INSTALLATION TRIVY ---
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | tee /usr/share/keyrings/trivy.gpg > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -cs) main" | tee -a /etc/apt/sources.list.d/trivy.list
-apt-get update
-apt-get install -y trivy linux-headers-$(uname -r)
-
 # --- 6. CONFIGURATION DE L'APP ---
 mkdir -p /home/ubuntu/wordpress
 cat <<EOT > /home/ubuntu/wordpress/.env
