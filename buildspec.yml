@@ -10,6 +10,7 @@ phases:
   install:
     commands:
       - echo "--- INSTALLATION DES OUTILS ---"
+      - sudo apt-get update
       # Gitleaks
       - wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz && tar -zxvf gitleaks_8.18.2_linux_x64.tar.gz && mv gitleaks /usr/local/bin/
       # Trivy
@@ -20,9 +21,14 @@ phases:
       # Checkov
       - pip3 install checkov
       # Terraform
-      - wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-      - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-      - apt update && apt install -y terraform unzip wget gnupg lsb-release
+      - |
+        TERRAFORM_VERSION="1.14.8"  
+        wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+        unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+        sudo mv terraform /usr/local/bin/
+        sudo chmod +x /usr/local/bin/terraform
+        terraform --version
+      - sudo apt-get update
 
   pre_build:
     commands:
