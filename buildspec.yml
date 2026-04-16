@@ -38,18 +38,18 @@ phases:
 
   pre_build:
     commands:
-      # GitLeaks
+      # Scan GitLeaks
       - echo "--- ETAPE 1 GITLEAKS (Secrets) ---"
       - gitleaks detect --source . --exit-code 1
 
-      # Checkov
+      # Scan Checkov
       - echo "--- ETAPE 2 CHECOKV (Infra as Code) ---"
       - checkov -d terraform/ --framework terraform --soft-fail
 
   build:
     commands:
 
-      # Trivy
+      # Scan Trivy
       - echo "--- ETAPE 3 TRIVY (Scan Image Docker - Bloquant) ---"
       - |
         IMAGES="wordpress:latest mariadb:11.4 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:latest falcosecurity/falco:latest falcosecurity/falcosidekick:latest"
@@ -59,7 +59,7 @@ phases:
                 --exit-code 1 \
                 --format table \
                 --ignore-unfixed \
-                --ignore-policy .trivyignore \
+                --ignorefile .trivyignore \
                 "$img"
           done
 
