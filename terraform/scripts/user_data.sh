@@ -124,6 +124,7 @@ MYSQL_PASSWORD=${db_password}
 MOUNT_POINT=${mount_point}
 EOT
 
+
 rm -rf /home/ubuntu/wordpress/uploads.ini
 rm -rf /home/ubuntu/monitoring/prometheus.yml
 
@@ -135,7 +136,31 @@ post_max_size = 64M
 max_execution_time = 300
 EOT
 
-# --- 7. CONFIGURATION DU MONITORING ---
+# --- 7. CREATION DOCKERFILE POUR WP & DB
+mkdir -p /home/ubuntu/wordpress/wp
+cat <<EOT > /home/ubuntu/wordpress/wp/Dockerfile
+FROM wordpress:latest
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
+EOT
+
+mkdir -p /home/ubuntu/wordpress/db
+cat <<EOT > /home/ubuntu/wordpress/db/Dockerfile
+FROM mariadb:11.6
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y wget && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/latest/download/gosu-amd64" && \
+    chmod +x /usr/local/bin/gosu
+EOT
+
+
+# --- 8. CONFIGURATION DU MONITORING ---
 mkdir -p /home/ubuntu/monitoring
 
 cat <<EOF > /home/ubuntu/monitoring/prometheus.yml
