@@ -1,6 +1,7 @@
 services:
+  build: ./db
   db:
-    image: mariadb:11.4
+    image: mariadb:11.6
     container_name: wp_db
     restart: always
     environment:
@@ -23,6 +24,7 @@ services:
       retries: 3
 
   wordpress:
+    build: ./wp
     depends_on:
       db:
         condition: service_healthy
