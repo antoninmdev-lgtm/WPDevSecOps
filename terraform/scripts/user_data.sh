@@ -142,8 +142,9 @@ cat <<EOT > /home/ubuntu/wordpress/wp/Dockerfile
 FROM wordpress:latest
 
 RUN apt-get update && \
-    apt-get upgrade -y && \
+    apt-get full-upgrade -y && \
     rm -rf /var/lib/apt/lists/*
+
 EOT
 
 mkdir -p /home/ubuntu/wordpress/db
@@ -151,7 +152,7 @@ cat <<EOT > /home/ubuntu/wordpress/db/Dockerfile
 FROM mariadb:11.6
 
 RUN apt-get update && \
-    apt-get upgrade -y && \
+    apt-get full-upgrade -y && \
     apt-get install -y wget && \
     rm -rf /var/lib/apt/lists/*
 
@@ -213,12 +214,12 @@ chown -R ubuntu:ubuntu /home/ubuntu/falco
 # Lancement
 chown -R ubuntu:ubuntu /home/ubuntu/wordpress
 cd /home/ubuntu/wordpress
-docker compose build --no-cache
+docker compose build --pull --no-cache
 docker compose up -d
 
 chown -R ubuntu:ubuntu /home/ubuntu/monitoring
 cd /home/ubuntu/monitoring
-docker compose build --no-cache
+docker compose build --pull --no-cache
 docker compose up -d
 
 echo "--- USER DATA FINISHED ---"
