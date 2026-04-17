@@ -84,7 +84,7 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        limit_req zone=mablock burst=10 nodelay;
+        limit_req zone=mablock burst=50 nodelay;
     }
 }
 EOF
@@ -103,7 +103,7 @@ read -r -d '' WHITELIST_BLOCK << EOP
             0 \$binary_remote_addr;
             1 "";
         }
-        limit_req_zone \$limit_ip zone=mablock:10m rate=2r/s;
+        limit_req_zone \$limit_ip zone=mablock:10m rate=5r/s;
 EOP
 
 # Insertion propre après la ligne 'http {'
@@ -213,10 +213,12 @@ chown -R ubuntu:ubuntu /home/ubuntu/falco
 # Lancement
 chown -R ubuntu:ubuntu /home/ubuntu/wordpress
 cd /home/ubuntu/wordpress
+docker compose build --no-cache
 docker compose up -d
 
 chown -R ubuntu:ubuntu /home/ubuntu/monitoring
 cd /home/ubuntu/monitoring
+docker compose build --no-cache
 docker compose up -d
 
 echo "--- USER DATA FINISHED ---"
