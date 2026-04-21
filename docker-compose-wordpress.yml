@@ -28,7 +28,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    image: wordpress:latest
+    image: wordpress-secu
     container_name: wp_app
     restart: always
     ports:
