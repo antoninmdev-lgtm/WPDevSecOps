@@ -52,7 +52,7 @@ phases:
       # Scan Trivy
       - echo "--- ETAPE 3 TRIVY (Scan Image Docker - Bloquant) ---"
       - |
-        IMAGES="wordpress:latest mariadb:11.4 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:latest falcosecurity/falco:latest falcosecurity/falcosidekick:latest"
+        IMAGES="wordpress-secu mariadb:11.4 prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:latest falcosecurity/falco:latest falcosecurity/falcosidekick:latest"
 
         for img in $IMAGES; do
           trivy image --severity CRITICAL,HIGH \
