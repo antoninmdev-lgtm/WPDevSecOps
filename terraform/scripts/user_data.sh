@@ -149,12 +149,6 @@ EOT
 mkdir -p /home/ubuntu/wordpress/db
 cat <<EOT > /home/ubuntu/wordpress/db/Dockerfile
 FROM mariadb:11.6
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    mariadb-server=1:10.11.11-0ubuntu0.24.04.2 \
-    gpg=2.4.4-2ubuntu17.4 && \
-    apt-get full-upgrade -y && \
-    rm -rf /var/lib/apt/lists/*
 
 FROM golang:1.26-alpine AS gosu-builder
 RUN go install github.com/tianon/gosu@latest
@@ -162,6 +156,15 @@ RUN go install github.com/tianon/gosu@latest
 FROM mariadb:11.6
 COPY --from=gosu-builder /go/bin/gosu /usr/local/bin/gosu
 
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gpg=2.4.4-2ubuntu17.4 && \
+    apt-get full-upgrade -y && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+USER mysql
 EOT
 
 

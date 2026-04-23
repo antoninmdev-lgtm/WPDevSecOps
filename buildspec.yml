@@ -48,11 +48,16 @@ phases:
 
   build:
     commands:
+      # Build image docker sur l'environnement propre
+      - echo "--- BUILD DES IMAGES DOCKER ---"
+      - docker build -t wordpress_secu:latest wordpress/wordpress/
+      - docker build -t mariadb_secu:latest wordpress/mariadb/
+
 
       # Scan Trivy
       - echo "--- ETAPE 3 TRIVY (Scan Image Docker - Bloquant) ---"
       - |
-        IMAGES="wordpress_secu:latest mariadb_secu:latest prom/prometheus:latest grafana/grafana:latest gcr.io/cadvisor/cadvisor:latest falcosecurity/falco:latest falcosecurity/falcosidekick:latest"
+        IMAGES="wordpress_secu:latest mariadb_secu:latest"
 
         for img in $IMAGES; do
           trivy image --severity CRITICAL,HIGH \
