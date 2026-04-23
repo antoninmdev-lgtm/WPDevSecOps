@@ -1,0 +1,17 @@
+FROM mariadb:11.6
+
+FROM golang:1.26-alpine AS gosu-builder
+RUN go install github.com/tianon/gosu@latest
+
+FROM mariadb:11.6
+COPY --from=gosu-builder /go/bin/gosu /usr/local/bin/gosu
+
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gpg=2.4.4-2ubuntu17.4 && \
+    apt-get full-upgrade -y && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+USER mysql

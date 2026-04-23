@@ -49,9 +49,8 @@ phases:
   build:
     commands:
       # Build image docker sur l'environnement propre
-      - echo "--- BUILD DES IMAGES DOCKER ---"
-      - docker build -t wordpress_secu:latest wordpress/wordpress/
-      - docker build -t mariadb_secu:latest wordpress/mariadb/
+      - docker build -t wordpress_secu DockerFile/wp/
+      - docker build -t mariadb_secu DockerFile/db/
 
 
       # Scan Trivy
