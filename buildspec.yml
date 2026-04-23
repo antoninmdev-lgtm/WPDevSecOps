@@ -49,7 +49,7 @@ phases:
   build:
     commands:
       # Build image docker sur l'environnement propre
-      - docker --version
+      - ls -la DockerFile/wp/
       - docker build -t wordpress_secu DockerFile/wp/
       - docker build -t mariadb_secu DockerFile/db/
 
