@@ -54,12 +54,12 @@ phases:
       - docker build -t mariadb_secu:latest -f DockerFile/db/DockerFile DockerFile/db/
 
       # Deploiement Terraform
+      - ls
       - cd terraform
       - terraform init
       - terraform validate
       - terraform fmt -check
-      - terraform plan -out=tfplan -var-file="dev.tfvars"
-      - aws s3 cp tfplan s3://your-bucket/tfplans/dev-$(date +%Y%m%d-%H%M).plan
+      - terraform plan
 
       # Timer
       - echo "--- ETAPE 6 ATTENTE DU SITE ---"
