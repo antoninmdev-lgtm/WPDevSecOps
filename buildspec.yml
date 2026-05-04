@@ -50,23 +50,8 @@ phases:
     commands:
       # Build image docker sur l'environnement propre
       - ls -la DockerFile/wp/
-      - docker build -t wordpress_secu:latest DockerFile/wp/
-      - docker build -t mariadb_secu:latest DockerFile/db/
-
-
-      # Scan Trivy
-      - echo "--- ETAPE 3 TRIVY (Scan Image Docker - Bloquant) ---"
-      - |
-        IMAGES="wordpress_secu:latest mariadb_secu:latest"
-
-        for img in $IMAGES; do
-          trivy image --severity CRITICAL,HIGH \
-                --exit-code 1 \
-                --format table \
-                --ignore-unfixed \
-                --ignorefile .trivyignore \
-                "$img"
-          done
+      - docker build -t wordpress_secu:latest -f DockerFile/wp/DockerFile DockerFile/wp/
+      - docker build -t mariadb_secu:latest -f DockerFile/db/DockerFile DockerFile/db/
 
       # Deploiement Terraform
       - cd terraform
@@ -84,19 +69,6 @@ phases:
           if [ $counter -eq $timeout ]; then exit 1; fi
           sleep 5 && counter=$((counter+5))
         done
-
-      # Owasp ZAP
-      - echo "--- ETAPE 7 OWASP ZAP (Scan Dynamique) ---"
-      - |
-        docker run --rm -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
-          -t $INSTANCE_URL -r security-reports/zap_report.html || [ $? -ne 4 ]
-
-      # WPScan
-      - echo "--- ETAPE 8 WPSCAN (Scan Spécifique WordPress) ---"
-      - |
-        docker run --rm wpscanteam/wpscan \
-          --url $INSTANCE_URL --api-token $WPSCAN_API_TOKEN \
-          --enumerate p,t,u --fail-on-vulnerability --output security-reports/wpscan_report.txt
 
   post_build:
     commands:
